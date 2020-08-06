@@ -4,7 +4,7 @@ pipeline {
     registryCredential = 'docker_hub_poornii'
     dockerImage = ''
   }
-  agent any
+ agent any
   stages{
     stage ('Build') {
       steps{
@@ -21,6 +21,9 @@ pipeline {
     stage ('Build Docker Image') {
       steps{
         echo "Building Docker Image"
+        script {
+          dockerImage = docker.build registry + ":$BUILD_NUMBER"
+        }
       }
     }
     stage ('Push Docker Image') {
@@ -29,6 +32,7 @@ pipeline {
         script {
           docker.withRegistry( '', registryCredential ) {
               dockerImage.push()
+              dockerImage.push('latest')
           }
         }
       }
@@ -36,6 +40,8 @@ pipeline {
     stage ('Deploy to Dev') {
       steps{
         echo "Deploying to Dev Environment"
+        sh "docker rm -f petclinic || true"
+        sh "docker run -d --name=petclinic -p 8081:8080 poornii/petclinic"
       }
     }
   }
